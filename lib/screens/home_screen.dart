@@ -35,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('金莲提醒'),
+        title: const Text('暖暖瓜心'),
         centerTitle: true,
       ),
       body: _isLoading
