@@ -111,6 +111,8 @@ class _ReminderListScreenState extends State<ReminderListScreen> {
         return '每月 ${reminder.frequencyDetails} 号';
       case ReminderFrequency.interval:
         return '每 ${reminder.frequencyDetails} 天';
+      case ReminderFrequency.intervalHours:
+        return '每 ${reminder.frequencyDetails} 小时';
     }
   }
 

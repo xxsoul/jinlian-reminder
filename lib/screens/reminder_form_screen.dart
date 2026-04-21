@@ -25,6 +25,7 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
   List<int> _selectedWeekdays = [];
   List<int> _selectedMonthDays = [];
   int _intervalDays = 1;
+  int _intervalHours = 1;
 
   bool _isEditing = false;
 
@@ -50,6 +51,9 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
             break;
           case ReminderFrequency.interval:
             _intervalDays = int.parse(widget.reminder!.frequencyDetails!);
+            break;
+          case ReminderFrequency.intervalHours:
+            _intervalHours = int.parse(widget.reminder!.frequencyDetails!);
             break;
           case ReminderFrequency.daily:
             break;
@@ -93,6 +97,7 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
                 DropdownMenuItem(value: ReminderFrequency.weekly, child: Text('每周')),
                 DropdownMenuItem(value: ReminderFrequency.monthly, child: Text('每月')),
                 DropdownMenuItem(value: ReminderFrequency.interval, child: Text('间隔天数')),
+                DropdownMenuItem(value: ReminderFrequency.intervalHours, child: Text('间隔小时数')),
               ],
               onChanged: (value) {
                 setState(() => _frequency = value ?? ReminderFrequency.daily);
@@ -102,6 +107,7 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
             if (_frequency == ReminderFrequency.weekly) _buildWeekdaySelector(),
             if (_frequency == ReminderFrequency.monthly) _buildMonthDaySelector(),
             if (_frequency == ReminderFrequency.interval) _buildIntervalSelector(),
+            if (_frequency == ReminderFrequency.intervalHours) _buildIntervalHoursSelector(),
             const SizedBox(height: 16),
             TextFormField(
               controller: _messageController,
@@ -227,6 +233,28 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
     );
   }
 
+  Widget _buildIntervalHoursSelector() {
+    return Row(
+      children: [
+        const Text('间隔'),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Slider(
+            value: _intervalHours.toDouble(),
+            min: 1,
+            max: 24,
+            divisions: 23,
+            label: '$_intervalHours 小时',
+            onChanged: (value) {
+              setState(() => _intervalHours = value.toInt());
+            },
+          ),
+        ),
+        Text('$_intervalHours 小时'),
+      ],
+    );
+  }
+
   Future<void> _saveReminder() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -254,6 +282,9 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
         break;
       case ReminderFrequency.interval:
         frequencyDetails = _intervalDays.toString();
+        break;
+      case ReminderFrequency.intervalHours:
+        frequencyDetails = _intervalHours.toString();
         break;
       case ReminderFrequency.daily:
         frequencyDetails = null;

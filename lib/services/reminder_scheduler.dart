@@ -27,6 +27,8 @@ class ReminderScheduler {
         return _findNextMonthlyTime(reminder, baseTime, now);
       case ReminderFrequency.interval:
         return _findNextIntervalTime(reminder, baseTime, now);
+      case ReminderFrequency.intervalHours:
+        return _findNextIntervalHoursTime(reminder, baseTime, now);
     }
   }
 
@@ -117,6 +119,23 @@ class ReminderScheduler {
     candidate = DateTime(candidate.year, candidate.month, candidate.day, baseTime.hour, baseTime.minute);
     if (candidate.isBefore(now)) {
       candidate = candidate.add(Duration(days: intervalDays));
+    }
+
+    return candidate;
+  }
+
+  DateTime? _findNextIntervalHoursTime(Reminder reminder, DateTime baseTime, DateTime now) {
+    if (reminder.frequencyDetails == null) return null;
+
+    final intervalHours = int.parse(reminder.frequencyDetails!);
+    if (intervalHours <= 0) return null;
+
+    // 从上次触发时间或创建时间计算
+    DateTime startTime = reminder.nextTriggerTime ?? reminder.createdAt;
+    DateTime candidate = startTime;
+
+    while (candidate.isBefore(now) || candidate.isAtSameMomentAs(now)) {
+      candidate = candidate.add(Duration(hours: intervalHours));
     }
 
     return candidate;

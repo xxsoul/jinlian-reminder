@@ -162,12 +162,14 @@ const _ReminderfrequencyEnumValueMap = {
   'weekly': 1,
   'monthly': 2,
   'interval': 3,
+  'intervalHours': 4,
 };
 const _ReminderfrequencyValueEnumMap = {
   0: ReminderFrequency.daily,
   1: ReminderFrequency.weekly,
   2: ReminderFrequency.monthly,
   3: ReminderFrequency.interval,
+  4: ReminderFrequency.intervalHours,
 };
 
 Id _reminderGetId(Reminder object) {

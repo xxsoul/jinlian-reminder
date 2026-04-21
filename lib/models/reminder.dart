@@ -7,6 +7,7 @@ enum ReminderFrequency {
   weekly,
   monthly,
   interval,
+  intervalHours,
 }
 
 @collection
