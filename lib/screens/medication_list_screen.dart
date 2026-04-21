@@ -201,10 +201,12 @@ class _MedicationListScreenState extends State<MedicationListScreen> {
       m.id != medicationId && remindersByMed.containsKey(m.id) && remindersByMed[m.id]!.isNotEmpty
     ).toList();
 
+    if (!mounted) return;
+
     await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text('为「${newMedication.name}」添加提醒'),
         content: SizedBox(
           width: double.maxFinite,
@@ -235,7 +237,9 @@ class _MedicationListScreenState extends State<MedicationListScreen> {
                         );
                         await DatabaseService.instance.saveReminder(newReminder);
                       }
-                      Navigator.pop(context);
+                      // dialog context 在 async 后使用对于 dialog pop 是安全的
+                      // ignore: use_build_context_synchronously
+                      Navigator.pop(dialogContext);
                     },
                   )),
                   const Divider(),
@@ -248,16 +252,18 @@ class _MedicationListScreenState extends State<MedicationListScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('稍后添加'),
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
+              if (!mounted) return;
               await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => ReminderFormScreen(medicationId: medicationId)),
               );
+              if (!mounted) return;
               _loadMedications();
             },
             child: const Text('添加新提醒'),

@@ -139,7 +139,6 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
   /// 同步已触发但无服药记录的提醒
   Future<void> _syncTriggeredReminders() async {
     final now = DateTime.now();
-    final todayStart = DateTime(now.year, now.month, now.day);
 
     // 获取今天所有活跃提醒
     final todayReminders = await DatabaseService.instance.getTodayReminders();

@@ -114,7 +114,7 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
               controller: _messageController,
               decoration: const InputDecoration(
                 labelText: '提醒消息',
-                hintText: '如：请按时服药',
+                hintText: '是时候离健康更近一步了',
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
