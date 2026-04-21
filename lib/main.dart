@@ -57,6 +57,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initializeApp() async {
+    // 请求通知权限
+    await NotificationService.instance.requestPermission();
     // 初始化所有活跃提醒
     await ReminderScheduler.instance.initializeAllReminders();
     // 初始化复诊提醒

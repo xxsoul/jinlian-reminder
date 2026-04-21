@@ -242,8 +242,8 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
           child: Slider(
             value: _intervalHours.toDouble(),
             min: 1,
-            max: 24,
-            divisions: 23,
+            max: 168,
+            divisions: 167,
             label: '$_intervalHours 小时',
             onChanged: (value) {
               setState(() => _intervalHours = value.toInt());
