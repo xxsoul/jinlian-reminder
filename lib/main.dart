@@ -100,6 +100,7 @@ class HomeScreenContent extends StatefulWidget {
 
 class _HomeScreenContentState extends State<HomeScreenContent> {
   List<MedicationLog> _todayLogs = [];
+  List<Reminder> _todayReminders = [];
   List<Medication> _medications = [];
   List<FollowUpAlert> _pendingFollowUps = [];
   bool _isLoading = true;
@@ -124,11 +125,44 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
 
+    // 先检查并创建已触发但无记录的服药记录
+    await _syncTriggeredReminders();
+
     _todayLogs = await DatabaseService.instance.getTodayLogs();
+    _todayReminders = await DatabaseService.instance.getTodayReminders();
     _medications = await DatabaseService.instance.getActiveMedications();
     _pendingFollowUps = await DatabaseService.instance.getPendingFollowUpAlerts();
 
     setState(() => _isLoading = false);
+  }
+
+  /// 同步已触发但无服药记录的提醒
+  Future<void> _syncTriggeredReminders() async {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+
+    // 获取今天所有活跃提醒
+    final todayReminders = await DatabaseService.instance.getTodayReminders();
+
+    for (final reminder in todayReminders) {
+      final nextTrigger = reminder.nextTriggerTime;
+      if (nextTrigger == null) continue;
+
+      // 如果提醒时间已过且没有创建记录，则创建一条 missed 记录
+      if (nextTrigger.isBefore(now) || nextTrigger.isAtSameMomentAs(now)) {
+        final hasLog = await DatabaseService.instance.hasLogForReminderToday(reminder.id);
+        if (!hasLog) {
+          final log = MedicationLog(
+            medicationId: reminder.medicationId,
+            reminderId: reminder.id,
+            scheduledTime: nextTrigger,
+            status: MedicationLogStatus.missed,
+            createdAt: now,
+          );
+          await DatabaseService.instance.saveLog(log);
+        }
+      }
+    }
   }
 
   @override
@@ -323,6 +357,8 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
 
   Widget _buildTodayMedicationSection() {
     final pendingLogs = _todayLogs.where((l) => l.status == MedicationLogStatus.missed).toList();
+    final now = DateTime.now();
+    final upcomingReminders = _todayReminders.where((r) => r.nextTriggerTime != null && r.nextTriggerTime!.isAfter(now)).toList();
 
     return Card(
       child: Padding(
@@ -330,16 +366,51 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('今日待服药', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            if (pendingLogs.isEmpty)
+            if (pendingLogs.isNotEmpty) ...[
+              Text('已到时间待服药', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              ...pendingLogs.map((log) => _buildLogCard(log)),
+              const SizedBox(height: 16),
+            ],
+            if (upcomingReminders.isNotEmpty) ...[
+              Text('今日即将服药', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              ...upcomingReminders.map((reminder) => _buildUpcomingReminderCard(reminder)),
+            ],
+            if (pendingLogs.isEmpty && upcomingReminders.isEmpty)
               const ListTile(
                 leading: Icon(Icons.check_circle, color: Colors.green),
-                title: Text('所有药物已服用'),
-              )
-            else
-              ...pendingLogs.map((log) => _buildLogCard(log)),
+                title: Text('今日暂无服药安排'),
+              ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUpcomingReminderCard(Reminder reminder) {
+    final medication = _medications.firstWhere(
+      (m) => m.id == reminder.medicationId,
+      orElse: () => Medication(name: '未知药物', dosage: '', createdAt: DateTime.now()),
+    );
+
+    final triggerTime = reminder.nextTriggerTime!;
+    final timeStr = _formatTime(triggerTime);
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.blue,
+          child: Icon(Icons.schedule, color: Colors.white),
+        ),
+        title: Text(medication.name),
+        subtitle: Text('${medication.dosage} - $timeStr'),
+        trailing: Text(
+          triggerTime.difference(DateTime.now()).inMinutes < 60
+              ? '${triggerTime.difference(DateTime.now()).inMinutes}分钟后'
+              : '${triggerTime.difference(DateTime.now()).inHours}小时后',
+          style: TextStyle(color: Colors.blue, fontSize: 12),
         ),
       ),
     );

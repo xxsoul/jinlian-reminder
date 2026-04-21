@@ -61,6 +61,33 @@ class DatabaseService {
     return await isar.reminders.get(id);
   }
 
+  /// 获取今天即将触发的提醒
+  Future<List<Reminder>> getTodayReminders() async {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final todayEnd = todayStart.add(const Duration(days: 1));
+
+    return await isar.reminders.where()
+      .filter()
+      .isActiveEqualTo(true)
+      .and()
+      .nextTriggerTimeBetween(todayStart, todayEnd)
+      .findAll();
+  }
+
+  /// 获取所有药物的提醒（用于共用提醒选择）
+  Future<Map<int, List<Reminder>>> getRemindersByMedication() async {
+    final reminders = await getActiveReminders();
+    final Map<int, List<Reminder>> result = {};
+    for (final reminder in reminders) {
+      if (!result.containsKey(reminder.medicationId)) {
+        result[reminder.medicationId] = [];
+      }
+      result[reminder.medicationId]!.add(reminder);
+    }
+    return result;
+  }
+
   Future<int> saveReminder(Reminder reminder) async {
     return await isar.writeTxn(() async {
       return await isar.reminders.put(reminder);
@@ -153,6 +180,21 @@ class DatabaseService {
 
   Future<List<MedicationLog>> getTodayLogs() async {
     return await getLogsForDate(DateTime.now());
+  }
+
+  /// 获取某个提醒在今天是否已有服药记录
+  Future<bool> hasLogForReminderToday(int reminderId) async {
+    final todayStart = DateTime.now().subtract(Duration(hours: DateTime.now().hour, minutes: DateTime.now().minute, seconds: DateTime.now().second));
+    final todayEnd = todayStart.add(const Duration(days: 1));
+
+    final logs = await isar.medicationLogs.where()
+      .filter()
+      .reminderIdEqualTo(reminderId)
+      .and()
+      .scheduledTimeBetween(todayStart, todayEnd)
+      .findAll();
+
+    return logs.isNotEmpty;
   }
 
   Future<int> saveLog(MedicationLog log) async {

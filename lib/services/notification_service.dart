@@ -105,8 +105,10 @@ class NotificationService {
       'medication_reminders',
       '药物提醒',
       channelDescription: '药物服药提醒通知',
-      importance: Importance.high,
-      priority: Priority.high,
+      importance: Importance.max,
+      priority: Priority.max,
+      fullScreenIntent: true,
+      category: AndroidNotificationCategory.alarm,
     );
 
     const iosDetails = DarwinNotificationDetails();
@@ -130,8 +132,10 @@ class NotificationService {
       'medication_reminders',
       '药物提醒',
       channelDescription: '药物服药提醒通知',
-      importance: Importance.high,
-      priority: Priority.high,
+      importance: Importance.max,
+      priority: Priority.max,
+      fullScreenIntent: true,
+      category: AndroidNotificationCategory.alarm,
     );
 
     const iosDetails = DarwinNotificationDetails();

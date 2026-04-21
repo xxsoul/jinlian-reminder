@@ -3,6 +3,7 @@ import '../models/models.dart';
 import '../services/services.dart';
 import 'medication_form_screen.dart';
 import 'reminder_list_screen.dart';
+import 'reminder_form_screen.dart';
 
 class MedicationListScreen extends StatefulWidget {
   const MedicationListScreen({super.key});
@@ -180,7 +181,90 @@ class _MedicationListScreenState extends State<MedicationListScreen> {
       context,
       MaterialPageRoute(builder: (_) => const MedicationFormScreen()),
     );
-    if (result == true) _loadMedications();
+
+    if (result == true) {
+      _loadMedications();
+    } else if (result is Map && result['needReminder'] == true) {
+      _loadMedications();
+      await _showAddReminderDialog(result['medicationId']);
+    }
+  }
+
+  Future<void> _showAddReminderDialog(int medicationId) async {
+    final medications = await DatabaseService.instance.getActiveMedications();
+    final remindersByMed = await DatabaseService.instance.getRemindersByMedication();
+    final newMedication = medications.firstWhere((m) => m.id == medicationId,
+      orElse: () => Medication(name: '新药物', dosage: '', createdAt: DateTime.now()));
+
+    // 过滤出有提醒的药物（排除刚添加的这个）
+    final medicationsWithReminders = medications.where((m) =>
+      m.id != medicationId && remindersByMed.containsKey(m.id) && remindersByMed[m.id]!.isNotEmpty
+    ).toList();
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text('为「${newMedication.name}」添加提醒'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (medicationsWithReminders.isNotEmpty) ...[
+                  const Text('与已有药物共用提醒时间：', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  ...medicationsWithReminders.map((m) => ListTile(
+                    dense: true,
+                    title: Text(m.name),
+                    subtitle: Text('${remindersByMed[m.id]!.length} 个提醒'),
+                    trailing: const Icon(Icons.copy, size: 20),
+                    onTap: () async {
+                      // 复制提醒到新药物
+                      for (final reminder in remindersByMed[m.id]!) {
+                        final newReminder = Reminder(
+                          medicationId: medicationId,
+                          time: reminder.time,
+                          frequency: reminder.frequency,
+                          frequencyDetails: reminder.frequencyDetails,
+                          message: reminder.message,
+                          isActive: true,
+                          createdAt: DateTime.now(),
+                        );
+                        await DatabaseService.instance.saveReminder(newReminder);
+                      }
+                      Navigator.pop(context);
+                    },
+                  )),
+                  const Divider(),
+                ],
+                if (medicationsWithReminders.isEmpty)
+                  const Text('暂无其他药物的提醒可供共用'),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('稍后添加'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => ReminderFormScreen(medicationId: medicationId)),
+              );
+              _loadMedications();
+            },
+            child: const Text('添加新提醒'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _editMedication(Medication medication) async {

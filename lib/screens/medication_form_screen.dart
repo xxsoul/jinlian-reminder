@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/services.dart';
+import 'reminder_form_screen.dart';
 
 class MedicationFormScreen extends StatefulWidget {
   final Medication? medication;
@@ -217,9 +218,17 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
       isActive: widget.medication?.isActive ?? true,
     );
 
-    await DatabaseService.instance.saveMedication(medication);
+    final medicationId = await DatabaseService.instance.saveMedication(medication);
 
     if (!mounted) return;
-    Navigator.pop(context, true);
+
+    // 如果是编辑模式，直接返回
+    if (_isEditing) {
+      Navigator.pop(context, true);
+      return;
+    }
+
+    // 新增模式：返回并携带药物ID，让药物列表页面处理提醒添加
+    Navigator.pop(context, {'medicationId': medicationId, 'needReminder': true});
   }
 }

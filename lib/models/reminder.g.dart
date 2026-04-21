@@ -118,13 +118,13 @@ Reminder _reminderDeserialize(
         _ReminderfrequencyValueEnumMap[reader.readByteOrNull(offsets[1])] ??
             ReminderFrequency.daily,
     frequencyDetails: reader.readStringOrNull(offsets[2]),
+    id: id,
     isActive: reader.readBoolOrNull(offsets[3]) ?? true,
     medicationId: reader.readLong(offsets[4]),
     message: reader.readString(offsets[5]),
     nextTriggerTime: reader.readDateTimeOrNull(offsets[6]),
     time: reader.readString(offsets[7]),
   );
-  object.id = id;
   return object;
 }
 

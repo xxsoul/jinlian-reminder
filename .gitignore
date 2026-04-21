@@ -44,3 +44,8 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 .claude/
+
+# Flutter launcher icons generated files
+android/app/src/main/res/mipmap-*/ic_launcher.png
+ios/Runner/Assets.xcassets/AppIcon.appiconset/*.png
+android/build/

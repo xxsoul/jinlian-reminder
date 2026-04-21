@@ -1,3 +1,4 @@
+import 'package:isar/isar.dart';
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/services.dart';
@@ -292,6 +293,7 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
     }
 
     final reminder = Reminder(
+      id: widget.reminder?.id ?? Isar.autoIncrement,
       medicationId: widget.medicationId,
       time: _formatTime(_time),
       frequency: _frequency,

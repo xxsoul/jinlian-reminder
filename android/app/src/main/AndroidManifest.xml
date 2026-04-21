@@ -5,11 +5,12 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
     <!-- 请求忽略电池优化 -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
 
     <application
-        android:label="jinlian_reminder"
+        android:label="暖暖瓜心"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

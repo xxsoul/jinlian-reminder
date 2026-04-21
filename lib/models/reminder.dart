@@ -25,6 +25,7 @@ class Reminder {
   DateTime createdAt;
 
   Reminder({
+    this.id = Isar.autoIncrement,
     required this.medicationId,
     required this.time,
     required this.frequency,
