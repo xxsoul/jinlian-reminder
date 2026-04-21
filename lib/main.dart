@@ -59,6 +59,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _initializeApp() async {
     // 请求通知权限
     await NotificationService.instance.requestPermission();
+    // 请求精确闹钟权限（Android 12+ 需要）
+    await NotificationService.instance.requestExactAlarmPermission();
     // 初始化所有活跃提醒
     await ReminderScheduler.instance.initializeAllReminders();
     // 初始化复诊提醒
@@ -101,11 +103,22 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
   List<Medication> _medications = [];
   List<FollowUpAlert> _pendingFollowUps = [];
   bool _isLoading = true;
+  bool _notificationsEnabled = true;
+  bool _exactAlarmsEnabled = true;
+  bool _batteryOptimizationIgnored = true;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _checkPermissions();
+  }
+
+  Future<void> _checkPermissions() async {
+    _notificationsEnabled = await NotificationService.instance.areNotificationsEnabled();
+    _exactAlarmsEnabled = await NotificationService.instance.canScheduleExactAlarms();
+    _batteryOptimizationIgnored = await NotificationService.instance.isIgnoringBatteryOptimizations();
+    setState(() {});
   }
 
   Future<void> _loadData() async {
@@ -144,6 +157,10 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (!_notificationsEnabled || !_exactAlarmsEnabled || !_batteryOptimizationIgnored) ...[
+          _buildPermissionWarningCard(),
+          const SizedBox(height: 16),
+        ],
         _buildSummaryCard(),
         const SizedBox(height: 16),
         if (_pendingFollowUps.isNotEmpty) ...[
@@ -152,6 +169,50 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
         ],
         _buildTodayMedicationSection(),
       ],
+    );
+  }
+
+  Widget _buildPermissionWarningCard() {
+    return Card(
+      color: Colors.orange.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.warning, color: Colors.orange.shade700),
+                const SizedBox(width: 8),
+                Text('提醒设置', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.orange.shade700)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (!_notificationsEnabled)
+              const Text('• 通知权限未开启，将无法收到服药提醒'),
+            if (!_exactAlarmsEnabled)
+              const Text('• 精确闹钟权限未开启，提醒可能无法准时触发'),
+            if (!_batteryOptimizationIgnored)
+              const Text('• 电池优化未关闭，系统可能会延迟提醒通知'),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () async {
+                if (!_notificationsEnabled) {
+                  await NotificationService.instance.requestPermission();
+                }
+                if (!_exactAlarmsEnabled) {
+                  await NotificationService.instance.requestExactAlarmPermission();
+                }
+                if (!_batteryOptimizationIgnored) {
+                  await NotificationService.instance.requestIgnoreBatteryOptimizations();
+                }
+                _checkPermissions();
+              },
+              child: const Text('设置权限'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

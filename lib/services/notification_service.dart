@@ -1,12 +1,14 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:flutter/services.dart';
 
 class NotificationService {
   static final NotificationService instance = NotificationService._();
   NotificationService._();
 
   final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
+  static const _batteryChannel = MethodChannel('battery_optimization');
 
   Future<void> init() async {
     tz_data.initializeTimeZones();
@@ -64,6 +66,33 @@ class NotificationService {
     }
 
     return granted;
+  }
+
+  /// 检查通知权限是否已授予
+  Future<bool> areNotificationsEnabled() async {
+    final android = _notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (android != null) {
+      return await android.areNotificationsEnabled() ?? false;
+    }
+    return true;
+  }
+
+  /// 检查精确闹钟权限是否已授予
+  Future<bool> canScheduleExactAlarms() async {
+    final android = _notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (android != null) {
+      return await android.canScheduleExactNotifications() ?? false;
+    }
+    return true;
+  }
+
+  /// 请求精确闹钟权限
+  Future<bool> requestExactAlarmPermission() async {
+    final android = _notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (android != null) {
+      return await android.requestExactAlarmsPermission() ?? false;
+    }
+    return true;
   }
 
   Future<void> showNotification({
@@ -133,5 +162,33 @@ class NotificationService {
 
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     return await _notifications.pendingNotificationRequests();
+  }
+
+  /// 检查是否已忽略电池优化
+  Future<bool> isIgnoringBatteryOptimizations() async {
+    try {
+      return await _batteryChannel.invokeMethod('isIgnoringBatteryOptimizations') as bool;
+    } catch (e) {
+      return true;
+    }
+  }
+
+  /// 请求忽略电池优化（会弹出系统对话框）
+  Future<void> requestIgnoreBatteryOptimizations() async {
+    try {
+      await _batteryChannel.invokeMethod('requestIgnoreBatteryOptimizations');
+    } catch (e) {
+      // 如果失败，打开设置页面
+      await openBatteryOptimizationSettings();
+    }
+  }
+
+  /// 打开电池优化设置页面
+  Future<void> openBatteryOptimizationSettings() async {
+    try {
+      await _batteryChannel.invokeMethod('openBatteryOptimizationSettings');
+    } catch (e) {
+      // 忽略错误
+    }
   }
 }
